@@ -47,7 +47,9 @@ import java.net.UnknownHostException;
  *
  */
 public class PlotVRActivity extends GvrActivity {
-    public static final String TAG = "DataVRActivity";
+    public static final String TAG = "PlotVRActivity";
+
+    public static final boolean OPEN_LAST_URI_ON_DEFAULT=false;
 
     private Renderer renderer;
 
@@ -84,8 +86,8 @@ public class PlotVRActivity extends GvrActivity {
         // now lets try to find out, what data to show:
         Intent intent = getIntent();
         Uri uri = intent.getData();
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        if (uri == null) {
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+        if (OPEN_LAST_URI_ON_DEFAULT && uri == null) {
             String preferredUri = sharedPref.getString("preferred.uri", null);
             if (preferredUri != null) {
                 uri = Uri.parse(preferredUri);
@@ -138,13 +140,15 @@ public class PlotVRActivity extends GvrActivity {
     }
 
     public void setDataHost(Uri uri) {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         Log.i(TAG, "Initial intent data: " + uri);
-        if (!uri.getLastPathSegment().equals("data.json"))
+        if (uri.getLastPathSegment()==null || !uri.getLastPathSegment().equals("data.json"))
             uri = uri.buildUpon().path(uri.getPath().replaceAll("/[^/]*$", "/data.json")).build();
+        if(uri.getPort() < 10)
+            uri = uri.buildUpon().encodedAuthority(uri.getAuthority()+":2908").build();
         dataUrl = uri.toString();
         Log.i(TAG, "Using dataUrl " + dataUrl);
         refreshData();
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
         sharedPref.edit().putString("preferred.uri", uri.toString()).apply();
 
 
